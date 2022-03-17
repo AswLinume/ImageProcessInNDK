@@ -20,12 +20,13 @@ public class BitmapProcessingUtils {
     private static long mPtr;
 
     public static void init(Bitmap bitmap) {
-        Log.i(TAG, "init: ");
+        Log.i(TAG, "init: " + Thread.currentThread().getName());
         mPtr = nativeInit(bitmap);
     }
 
 
     public static void transImage(Bitmap bitmap, Handler handler, int processingType) {
+        Log.i(TAG, "transImage: " + Thread.currentThread().getName());
         nativeTransImage(mPtr, bitmap, processingType, handler);
     }
 
