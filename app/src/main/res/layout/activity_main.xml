@@ -23,8 +23,15 @@
             <ImageView
                 android:id="@+id/iv_demo"
                 android:layout_width="wrap_content"
-                android:layout_height="450dp"
+                android:layout_height="400dp"
                 android:src="@mipmap/demo" />
+
+            <Button
+                android:layout_width="150dp"
+                android:layout_height="50dp"
+                android:onClick="loadImage"
+                android:layout_gravity="center"
+                android:text="从手机加载图片" />
 
             <Button
                 android:layout_width="150dp"
