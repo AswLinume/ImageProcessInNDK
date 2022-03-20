@@ -1,12 +1,15 @@
 package com.aswlinume.nativebitmapdemo;
 
+import android.app.AlertDialog;
 import android.app.ProgressDialog;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -15,6 +18,7 @@ import android.provider.MediaStore;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
+import android.widget.EditText;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -23,6 +27,11 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 
 import com.aswlinume.nativebitmapdemo.databinding.ActivityMainBinding;
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.DataSource;
+import com.bumptech.glide.load.engine.GlideException;
+import com.bumptech.glide.request.RequestListener;
+import com.bumptech.glide.request.target.Target;
 
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -68,7 +77,7 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    public void loadImage(View view) {
+    public void loadImageFromLocal(View view) {
         if (!checkReadStoragePermissions()) {
             ActivityCompat.requestPermissions(this, PERMISSIONS_READ_STORAGE,
                     REQUEST_CODE_FOR_PERMISSION_READ_STORAGE);
@@ -117,12 +126,12 @@ public class MainActivity extends AppCompatActivity {
             if (mBitmap != null) {
                 mBitmap.recycle();
             }
-            mBitmap = getBitmapFromPath(imagePath);
-            Log.i(TAG, "loadImageBySelect: " + mBitmap);
+            mBitmap = BitmapFactory.decodeFile(imagePath);
             mBinding.ivDemo.setImageBitmap(mBitmap);
         }
     }
 
+    //DownScale image
     private Bitmap getBitmapFromPath(String imagePath) {
         Log.i(TAG, "getBitmapFromPath: " + imagePath);
         BitmapFactory.Options bfo = new BitmapFactory.Options();
@@ -143,6 +152,49 @@ public class MainActivity extends AppCompatActivity {
         options.outWidth = width;
         options.outHeight = height;
         return BitmapFactory.decodeFile(imagePath, options);
+    }
+
+    public void loadImageFromNet(View view) {
+        final EditText editText = new EditText(this);
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setTitle("请输入网络图片URL")
+                .setView(editText)
+                .setPositiveButton("加载图片", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        getImageFromNetByUrl(editText.getText().toString());
+                    }
+                }).create();
+        dialog.show();
+    }
+
+    private void getImageFromNetByUrl(String url) {
+        Log.i(TAG, "getImageFromNetByUrl: " + url);
+        Glide.with(this)
+                .load(url)
+                .placeholder(R.mipmap.demo)
+                .listener(new RequestListener<Drawable>() {
+                    @Override
+                    public boolean onLoadFailed(@Nullable GlideException e, Object model, Target<Drawable> target, boolean isFirstResource) {
+                        Toast.makeText(MainActivity.this, "图片加载失败，请检查图片地址是否正确", Toast.LENGTH_SHORT).show();
+                        return false;
+                    }
+
+                    @Override
+                    public boolean onResourceReady(Drawable resource, Object model, Target<Drawable> target, DataSource dataSource, boolean isFirstResource) {
+                        if (mBitmap != null) {
+                            mBitmap.recycle();
+                        }
+                        mBitmap = ((BitmapDrawable) (resource)).getBitmap();
+                        mExecutorService.execute(() -> {
+                            BitmapProcessingUtils.init(mBitmap);
+                        });
+                        mBinding.ivDemo.invalidate();
+                        return false;
+                    }
+                })
+                .into(mBinding.ivDemo);
+
     }
 
     public void resetImage(View view) throws ExecutionException, InterruptedException {
